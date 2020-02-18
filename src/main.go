@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/kyokomi/emoji"
 )
 
-// define scanner.
+// sc represent a scanner.
 var sc = bufio.NewScanner(os.Stdin)
 
 // nextInt checks if input is invalid as the iteration number and returns it.
@@ -30,11 +31,55 @@ func nextText() string {
 	return sc.Text()
 }
 
+// reTimeMS is regular expression for XXmYYs.
+var reTimeMS *regexp.Regexp = regexp.MustCompile(`^([0-5]*[0-9])(?:m)([0-5]*[0-9])(?:s)$`)
+
+// reTimeM is regular expression for XXm.
+var reTimeM *regexp.Regexp = regexp.MustCompile(`^([0-5]*[0-9])(?:m)$`)
+
+// reTimeS is regular expression for YYs.
+var reTimeS *regexp.Regexp = regexp.MustCompile(`^([0-5]*[0-9])(?:s)$`)
+
 // toSecond convert the formatted time to second.
 // For example, 3m30s will be 3*60 + 30.
 func toSecond(s string) (int, error) {
-	// regexp match
-	return 0, nil
+	if matches := reTimeMS.FindSubmatch([]byte(s)); len(matches) > 0 {
+		m, err := strconv.Atoi(string(matches[1]))
+		if err != nil {
+			return -1, err
+		}
+		s, err := strconv.Atoi(string(matches[2]))
+		if err != nil {
+			return -1, err
+		}
+		if sum := m*60 + s; sum == 0 {
+			return -1, errors.New("invalid number: mist not be zero")
+		} else {
+			return sum, nil
+		}
+	} else if matches := reTimeM.FindSubmatch([]byte(s)); len(matches) > 0 {
+		m, err := strconv.Atoi(string(matches[1]))
+		if err != nil {
+			return -1, err
+		}
+		if sum := m * 60; sum == 0 {
+			return -1, errors.New("invalid number: mist not be zero")
+		} else {
+			return sum, nil
+		}
+	} else if matches := reTimeS.FindSubmatch([]byte(s)); len(matches) > 0 {
+		s, err := strconv.Atoi(string(matches[1]))
+		if err != nil {
+			return -1, err
+		}
+		if s == 0 {
+			return -1, errors.New("invalid number: mist not be zero")
+		} else {
+			return s, nil
+		}
+	} else {
+		return -1, errors.New("input must be follow the indicated format")
+	}
 }
 
 // timeItoa returns time as 2-digit style.
@@ -113,7 +158,7 @@ func main() {
 		i++
 	}
 
+	// TODO: tick and ring bell
 	fmt.Println(secs) //
-	// TODO: ticks and ring bell
-	tick(10) //
+	tick(10)          //
 }
